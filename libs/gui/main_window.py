@@ -13,10 +13,10 @@ from typing import List
 from libs.core.rule import RegexRule, RuleFileManager
 from libs.core.file_manager import FileManager
 from libs.utils.hot_reload import HotReloadManager
-from libs.gui.tabs.file_processing import FileProcessingTab
-from libs.gui.tabs.rule_testing import RuleTestingTab
-from libs.gui.tabs.rule_management import RuleManagementTab
-from libs.gui.tabs.hot_reload import HotReloadTab
+import libs.gui.tabs.file_processing as file_processing_tab
+import libs.gui.tabs.rule_testing as rule_testing_tab
+import libs.gui.tabs.rule_management as rule_management_tab
+import libs.gui.tabs.hot_reload as hot_reload_tab
 from libs.config import WINDOW_TITLE, WINDOW_SIZE
 
 
@@ -64,11 +64,11 @@ class MainWindow:
         self.notebook = ttk.Notebook(main_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True)
         
-        # 创建各个标签页
-        self.tabs['file_processing'] = FileProcessingTab(self.notebook, self.rule_manager, self.rules, self)
-        self.tabs['rule_testing'] = RuleTestingTab(self.notebook, self.rule_manager, self.rules)
-        self.tabs['rule_management'] = RuleManagementTab(self.notebook, self.rule_manager, self.rules)
-        self.tabs['hot_reload'] = HotReloadTab(self.notebook, self.hot_reload_manager, self)
+        # 创建各个标签页（通过模块引用类，确保热重载后获取最新定义）
+        self.tabs['file_processing'] = file_processing_tab.FileProcessingTab(self.notebook, self.rule_manager, self.rules, self)
+        self.tabs['rule_testing'] = rule_testing_tab.RuleTestingTab(self.notebook, self.rule_manager, self.rules)
+        self.tabs['rule_management'] = rule_management_tab.RuleManagementTab(self.notebook, self.rule_manager, self.rules)
+        self.tabs['hot_reload'] = hot_reload_tab.HotReloadTab(self.notebook, self.hot_reload_manager, self)
     
     def setup_hot_reload(self):
         """设置热重载"""
@@ -143,11 +143,11 @@ class MainWindow:
             if hasattr(self, 'root') and self.root:
                 self.root.update_idletasks()
             
-            # 重新创建标签页
-            self.tabs['file_processing'] = FileProcessingTab(self.notebook, self.rule_manager, self.rules, self)
-            self.tabs['rule_testing'] = RuleTestingTab(self.notebook, self.rule_manager, self.rules)
-            self.tabs['rule_management'] = RuleManagementTab(self.notebook, self.rule_manager, self.rules)
-            self.tabs['hot_reload'] = HotReloadTab(self.notebook, self.hot_reload_manager, self)
+            # 重新创建标签页（通过模块引用类，确保热重载后获取最新定义）
+            self.tabs['file_processing'] = file_processing_tab.FileProcessingTab(self.notebook, self.rule_manager, self.rules, self)
+            self.tabs['rule_testing'] = rule_testing_tab.RuleTestingTab(self.notebook, self.rule_manager, self.rules)
+            self.tabs['rule_management'] = rule_management_tab.RuleManagementTab(self.notebook, self.rule_manager, self.rules)
+            self.tabs['hot_reload'] = hot_reload_tab.HotReloadTab(self.notebook, self.hot_reload_manager, self)
             
             # 恢复选中的标签页
             if current_tab and hasattr(self, 'notebook') and self.notebook:
@@ -165,24 +165,19 @@ class MainWindow:
         """重新加载模块"""
         import importlib
         
-        # 需要重新加载的模块列表
-        modules_to_reload = [
-            'libs.core.rule',
-            'libs.core.file_manager', 
-            'libs.core.renamer',
-            'libs.core.auto_matcher',
-            'libs.gui.tabs.file_processing',
-            'libs.gui.tabs.rule_testing',
-            'libs.gui.tabs.rule_management',
-            'libs.gui.tabs.hot_reload',
-            'libs.utils.hot_reload',
-            'libs.config'
+        # 动态收集所有已加载的 libs.* 模块，确保子模块也会被重载
+        loaded_lib_modules = [
+            name for name in list(sys.modules.keys()) if name.startswith('libs.')
         ]
         
-        for module_name in modules_to_reload:
+        # 父包优先（名称短的先重载），减少依赖顺序问题
+        loaded_lib_modules.sort(key=len)
+        
+        for module_name in loaded_lib_modules:
             try:
-                if module_name in sys.modules:
-                    importlib.reload(sys.modules[module_name])
+                module_obj = sys.modules.get(module_name)
+                if module_obj is not None:
+                    importlib.reload(module_obj)
                     self.hot_reload_manager.add_reload_log(f"模块 {module_name} 重载完成", "SUCCESS")
             except Exception as e:
                 self.hot_reload_manager.add_reload_log(f"重载模块 {module_name} 失败: {e}", "ERROR")
