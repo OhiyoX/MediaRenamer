@@ -66,11 +66,37 @@ class RegexRule:
                 for field in self.special_handling['uppercase_fields']:
                     if field in processed_info:
                         processed_info[field] = processed_info[field].upper()
-            
+
+            # 特殊处理：字段回退（将缺失字段从其他字段或默认值填充）
+            if self.special_handling and 'fallback_fields' in self.special_handling:
+                fallback_config = self.special_handling['fallback_fields']
+                for target_field, sources in fallback_config.items():
+                    current_value = processed_info.get(target_field, '')
+                    if current_value is None or str(current_value).strip() == "":
+                        # 允许列表或标量
+                        if isinstance(sources, list):
+                            assigned = False
+                            for src in sources:
+                                # 如果是其他字段名
+                                if src in processed_info and str(processed_info[src]).strip() != "":
+                                    processed_info[target_field] = processed_info[src]
+                                    assigned = True
+                                    break
+                                # 否则将其视为字面默认值
+                                elif isinstance(src, str) and src not in processed_info:
+                                    processed_info[target_field] = src
+                                    assigned = True
+                                    break
+                            if not assigned:
+                                processed_info[target_field] = ""
+                        else:
+                            # 标量默认值
+                            processed_info[target_field] = sources if isinstance(sources, str) else ""
+
             # 特殊处理：空episode字段
             if 'episode' in processed_info and not processed_info['episode']:
                 processed_info['episode'] = '01'  # 默认为01
-            
+
             # 特殊处理：检查是否是年份而不是集数
             if 'episode' in processed_info and self.special_handling:
                 episode_num = processed_info['episode']
