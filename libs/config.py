@@ -30,9 +30,23 @@ SUPPORTED_MEDIA_EXTENSIONS = SUPPORTED_VIDEO_EXTENSIONS | SUPPORTED_SUBTITLE_EXT
 RELOAD_COOLDOWN = 1.0  # 热重载冷却时间（秒）
 MAX_RELOAD_LOG_ENTRIES = 50  # 最大重载日志条目数
 
+# 父文件夹识别配置
+ENABLE_PARENT_FOLDER_RECOGNITION = True  # 是否启用从父文件夹识别剧名和季数
+PARENT_FOLDER_RECOGNITION_CONFIG = {
+    'enable_series_recognition': True,  # 是否启用剧名识别
+    'enable_season_recognition': True,  # 是否启用季数识别
+    'enable_custom_season': True,  # 是否启用自定义季数设置
+    'default_season': '01',  # 默认季数
+    'season_patterns': [  # 季数识别模式
+        r'S(\d+)',  # S01, S02
+        r'Season\s*(\d+)',  # Season 1, Season 2
+        r'第(\d+)季',  # 第1季, 第2季
+    ]
+}
+
 # GUI配置
 WINDOW_TITLE = "媒体文件智能重命名工具"
-WINDOW_SIZE = "1400x900"
+WINDOW_SIZE = "1600x1000"
 TREEVIEW_COLUMN_WIDTH = 200
 
 # 默认规则配置

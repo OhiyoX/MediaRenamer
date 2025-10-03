@@ -55,8 +55,27 @@ class PreviewDisplay:
     
     def add_preview_item(self, original_name: str, new_name: str, status: str, 
                         applied_rule: str, match_info: str, match_score: str, 
-                        rename_status: str = "未执行", is_duplicate: bool = False):
+                        rename_status: str = "未执行", is_duplicate: bool = False, 
+                        folder_info: Dict = None):
         """添加预览项"""
+        # 构建文件夹识别信息显示
+        folder_info_text = ""
+        if folder_info:
+            info_parts = []
+            if 'series' in folder_info:
+                info_parts.append(f"剧名: {folder_info['series']}")
+            if 'season' in folder_info:
+                info_parts.append(f"季数: S{folder_info['season']}")
+            if info_parts:
+                folder_info_text = " | ".join(info_parts)
+        
+        # 在匹配信息中添加文件夹识别信息
+        if folder_info_text:
+            if match_info and match_info != "请先应用规则":
+                match_info = f"{match_info} | 文件夹识别: {folder_info_text}"
+            else:
+                match_info = f"文件夹识别: {folder_info_text}"
+        
         item = self.preview_tree.insert('', tk.END, values=(
             original_name, new_name, status, applied_rule, match_info, match_score, rename_status
         ))

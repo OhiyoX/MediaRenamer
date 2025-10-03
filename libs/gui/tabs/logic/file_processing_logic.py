@@ -111,7 +111,7 @@ class FileProcessingLogic:
         """获取已应用规则的数量"""
         return len(self.applied_rules)
     
-    def preview_rename(self, custom_title: Optional[str] = None) -> List[Dict]:
+    def preview_rename(self, custom_title: Optional[str] = None, custom_season: Optional[str] = None) -> List[Dict]:
         """预览重命名"""
         if not self.file_list:
             return []
@@ -127,7 +127,7 @@ class FileProcessingLogic:
             if filename in self.applied_rules:
                 applied_rule = self.applied_rules[filename]
                 # 使用应用的规则进行预览
-                results = self.renamer.preview_rename([file_path], applied_rule, custom_title)
+                results = self.renamer.preview_rename([file_path], applied_rule, custom_title, custom_season)
                 if results:
                     result = results[0]
                     status = "已应用规则"
@@ -160,7 +160,8 @@ class FileProcessingLogic:
                 'status': status,
                 'applied_rule_name': applied_rule_name,
                 'match_info': match_info,
-                'match_score': match_score
+                'match_score': match_score,
+                'folder_info': result.get('folder_info', {}) if result else {}
             })
             
             new_filenames.append(new_filename)
@@ -210,7 +211,7 @@ class FileProcessingLogic:
                     progress_callback(i + 1, len(files_to_rename), filename, "处理中...")
                 
                 # 执行重命名
-                success, new_filename, match_info = self.renamer.match_filename_with_rule(filename, applied_rule, custom_title)
+                success, new_filename, match_info = self.renamer.match_filename_with_rule(filename, applied_rule, custom_title, str(file_path), None)
                 
                 if success:
                     new_path = file_path.parent / new_filename

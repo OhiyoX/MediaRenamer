@@ -69,6 +69,42 @@ class MainWindow:
         self.tabs['rule_testing'] = rule_testing_tab.RuleTestingTab(self.notebook, self.rule_manager, self.rules)
         self.tabs['rule_management'] = rule_management_tab.RuleManagementTab(self.notebook, self.rule_manager, self.rules)
         self.tabs['hot_reload'] = hot_reload_tab.HotReloadTab(self.notebook, self.hot_reload_manager, self)
+        
+        # 强制更新布局
+        self.root.update_idletasks()
+        self.root.update()
+        
+        # 设置最小窗口大小
+        self.root.minsize(1200, 800)
+        
+        # 确保窗口正确显示
+        self.root.after(100, self._ensure_window_display)
+    
+    def _ensure_window_display(self):
+        """确保窗口正确显示所有组件"""
+        try:
+            # 强制更新所有待处理的任务
+            self.root.update_idletasks()
+            
+            # 获取当前窗口大小
+            current_width = self.root.winfo_width()
+            current_height = self.root.winfo_height()
+            
+            # 如果窗口太小，调整到合适大小
+            if current_width < 1200 or current_height < 800:
+                self.root.geometry("1400x900")
+                self.root.update_idletasks()
+            
+            # 再次更新布局
+            self.root.update()
+            
+            # 确保所有标签页都正确显示
+            for tab_name, tab in self.tabs.items():
+                if hasattr(tab, 'frame'):
+                    tab.frame.update_idletasks()
+            
+        except Exception as e:
+            print(f"窗口显示检查时出错: {e}")
     
     def setup_hot_reload(self):
         """设置热重载"""

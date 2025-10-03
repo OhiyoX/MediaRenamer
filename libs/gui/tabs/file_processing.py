@@ -18,6 +18,8 @@ from libs.gui.tabs.components.title_editor import TitleEditor
 from libs.gui.tabs.components.preview_display import PreviewDisplay
 from libs.gui.tabs.components.action_buttons import ActionButtons
 from libs.gui.tabs.components.status_bar import StatusBar
+from libs.gui.tabs.components.config_button import ConfigButton
+from libs.core.config_manager import ConfigManager
 from libs.gui.tabs.logic.file_processing_logic import FileProcessingLogic
 from libs.gui.tabs.logic.result_handler import ResultHandler
 
@@ -28,6 +30,9 @@ class FileProcessingTab:
     def __init__(self, parent_notebook, rule_manager: RuleFileManager, rules: List[RegexRule], main_window=None):
         self.parent_notebook = parent_notebook
         self.main_window = main_window
+        
+        # 配置管理器
+        self.config_manager = ConfigManager()
         
         # 业务逻辑
         self.logic = FileProcessingLogic(rule_manager, rules)
@@ -69,12 +74,14 @@ class FileProcessingTab:
         # 规则详情显示组件
         self.rule_detail_display = RuleDetailDisplay(self.frame)
         
-        # 剧集名编辑组件
+        # 剧集名编辑组件（集成文件夹识别功能）
         self.title_editor = TitleEditor(
             self.frame,
             self.on_title_change,
             self.on_apply_custom_title,
-            self.on_clear_custom_title
+            self.on_clear_custom_title,
+            self.on_apply_custom_season,
+            self.config_manager
         )
         
         # 预览组件
@@ -92,6 +99,17 @@ class FileProcessingTab:
         
         # 状态栏组件
         self.status_bar = StatusBar(self.frame)
+        
+        # 配置按钮组件
+        self.config_button = ConfigButton(
+            self.frame,
+            self.config_manager,
+            self.on_config_changed
+        )
+        
+        # 确保组件正确显示
+        self.frame.update_idletasks()
+        self.frame.update()
     
     # 事件处理方法
     def on_directory_selected(self, directory: str):
@@ -101,6 +119,7 @@ class FileProcessingTab:
             self.status_bar.update_status(f"找到 {len(self.logic.file_list)} 个媒体文件")
             self.update_rule_info()
             self.update_apply_info()
+            self.update_folder_recognition()  # 更新文件夹识别信息
             self.preview_rename()
         except Exception as e:
             messagebox.showerror("错误", str(e))
@@ -207,6 +226,9 @@ class FileProcessingTab:
             # 更新应用规则信息
             self.update_apply_info()
             
+            # 更新文件夹识别信息
+            self.update_folder_recognition()
+            
         except Exception as e:
             self.status_bar.update_status(f"错误: {str(e)}")
             messagebox.showerror("错误", str(e))
@@ -216,20 +238,39 @@ class FileProcessingTab:
         # 可以在这里添加实时预览逻辑
         pass
     
-    def on_apply_custom_title(self, custom_title: str):
-        """应用自定义剧集名事件"""
+    def _apply_custom_settings(self, custom_title: str = None, custom_season: str = None):
+        """统一的应用自定义设置方法"""
         if not self.logic.file_list:
-            messagebox.showwarning("警告", "没有文件需要处理")
+            self.status_bar.update_status("没有文件需要处理")
             return
         
         # 更新预览
-        self.preview_rename()
-        messagebox.showinfo("完成", f"已应用自定义剧集名: '{custom_title}'\n请查看预览区域")
+        self.preview_rename(custom_title=custom_title, custom_season=custom_season)
+        
+        # 更新状态栏
+        status_parts = []
+        if custom_title:
+            status_parts.append(f"剧集名: '{custom_title}'")
+        if custom_season:
+            status_parts.append(f"季数: S{custom_season}")
+        
+        if status_parts:
+            self.status_bar.update_status(f"已应用自定义设置: {', '.join(status_parts)}")
+        else:
+            self.status_bar.update_status("已更新预览")
+    
+    def on_apply_custom_title(self, custom_title: str):
+        """应用自定义剧集名事件"""
+        self._apply_custom_settings(custom_title=custom_title)
     
     def on_clear_custom_title(self):
         """清除自定义剧集名事件"""
-        self.preview_rename()
-        messagebox.showinfo("完成", "已清除自定义剧集名")
+        self._apply_custom_settings()
+        self.status_bar.update_status("已清除自定义剧集名")
+    
+    def on_apply_custom_season(self, custom_season: str):
+        """应用自定义季数事件"""
+        self._apply_custom_settings(custom_season=custom_season)
     
     def on_preview_rename(self):
         """预览重命名事件"""
@@ -351,7 +392,7 @@ class FileProcessingTab:
         total_count = len(self.logic.file_list) if self.logic.file_list else 0
         self.rule_selector.update_apply_info(applied_count, total_count)
     
-    def preview_rename(self):
+    def preview_rename(self, custom_title: str = None, custom_season: str = None):
         """预览重命名"""
         try:
             if not self.logic.file_list:
@@ -360,11 +401,14 @@ class FileProcessingTab:
             # 清空预览
             self.preview_display.clear_preview()
             
-            # 获取自定义标题
-            custom_title = self.title_editor.get_custom_title() or None
+            # 获取自定义标题和季数
+            if custom_title is None:
+                custom_title = self.title_editor.get_custom_title() or None
+            if custom_season is None:
+                custom_season = self.title_editor.get_custom_season() or None
             
             # 预览每个文件
-            preview_results = self.logic.preview_rename(custom_title)
+            preview_results = self.logic.preview_rename(custom_title, custom_season)
             
             # 插入预览结果到树形控件
             for preview_result in preview_results:
@@ -376,6 +420,7 @@ class FileProcessingTab:
                 match_info = preview_result['match_info']
                 match_score = preview_result['match_score']
                 is_duplicate = preview_result['is_duplicate']
+                folder_info = preview_result['folder_info']
                 
                 if result:
                     self.preview_display.add_preview_item(
@@ -386,7 +431,8 @@ class FileProcessingTab:
                         match_info,
                         match_score,
                         "未执行",
-                        is_duplicate
+                        is_duplicate,
+                        folder_info
                     )
                 else:
                     self.preview_display.add_preview_item(
@@ -397,7 +443,8 @@ class FileProcessingTab:
                         match_info,
                         match_score,
                         "未执行",
-                        is_duplicate
+                        is_duplicate,
+                        folder_info
                     )
             
             # 配置重复文件名的标签样式
@@ -405,6 +452,37 @@ class FileProcessingTab:
             
         except Exception as e:
             messagebox.showerror("错误", str(e))
+    
+    def on_config_changed(self):
+        """配置变更事件"""
+        try:
+            # 重新预览重命名结果
+            self.preview_rename()
+            self.status_bar.update_status("配置已更新，重新预览完成")
+        except Exception as e:
+            self.status_bar.update_status(f"配置更新失败: {e}")
+    
+    def update_folder_recognition(self):
+        """更新文件夹识别信息"""
+        try:
+            if self.logic.file_list:
+                # 获取当前应用的规则
+                applied_rules = {}
+                for filename in self.logic.file_list:
+                    if filename.name in self.logic.applied_rules:
+                        applied_rules[filename.name] = self.logic.applied_rules[filename.name]
+                
+                # 使用第一个文件的规则进行分析
+                if applied_rules:
+                    first_rule = list(applied_rules.values())[0]
+                    self.title_editor.analyze_files(self.logic.file_list, first_rule)
+                else:
+                    self.title_editor.analyze_files(self.logic.file_list, None)
+            else:
+                self.title_editor._clear_folder_info()
+                
+        except Exception as e:
+            self.status_bar.update_status(f"更新文件夹识别失败: {e}")
     
     def update_rules(self, new_rules: List[RegexRule]):
         """更新规则列表"""

@@ -72,7 +72,24 @@ class MediaRenamer:
         
         return cleaned
     
-    def match_filename_with_rule(self, filename: str, rule: RegexRule, custom_title: str = None) -> Tuple[bool, str, str]:
+    def get_folder_recognition_info(self, filename: str, rule: RegexRule, file_path: str = None) -> Dict[str, str]:
+        """
+        获取文件夹识别信息（仅用于预览显示）
+        
+        Args:
+            filename: 文件名
+            rule: 规则对象
+            file_path: 文件完整路径
+            
+        Returns:
+            包含识别到的剧名和季数的字典
+        """
+        if not file_path:
+            return {}
+        
+        return rule.get_folder_recognition_info(file_path)
+    
+    def match_filename_with_rule(self, filename: str, rule: RegexRule, custom_title: str = None, file_path: str = None, custom_season: str = None) -> Tuple[bool, str, str]:
         """
         使用规则匹配文件名
         
@@ -80,6 +97,8 @@ class MediaRenamer:
             filename: 要匹配的文件名
             rule: 匹配规则
             custom_title: 自定义剧集名，如果提供则替换原剧集名
+            file_path: 文件完整路径，用于从父文件夹提取信息
+            custom_season: 自定义季数，如果提供则覆盖父文件夹识别的季数
             
         Returns:
             (是否匹配成功, 新文件名, 匹配信息)
@@ -102,7 +121,7 @@ class MediaRenamer:
                         # 如果规则没有匹配到series，添加自定义series
                         match_result['series'] = custom_title
                 
-                new_filename = rule.generate_output(match_result, extension)
+                new_filename = rule.generate_output(match_result, extension, file_path or "", custom_season, apply_folder_info=False)
                 
                 # 清理文件名
                 new_filename = self.clean_filename(new_filename)
@@ -113,7 +132,7 @@ class MediaRenamer:
         else:
             return False, filename, "无匹配"
     
-    def preview_rename(self, file_list: List[Path], rule: RegexRule, custom_title: str = None) -> List[Dict]:
+    def preview_rename(self, file_list: List[Path], rule: RegexRule, custom_title: str = None, custom_season: str = None) -> List[Dict]:
         """
         预览重命名结果
         
@@ -121,6 +140,7 @@ class MediaRenamer:
             file_list: 文件列表
             rule: 重命名规则
             custom_title: 自定义标题
+            custom_season: 自定义季数
             
         Returns:
             预览结果列表
@@ -129,19 +149,24 @@ class MediaRenamer:
         
         for file_path in file_list:
             filename = file_path.name
-            success, new_filename, match_info = self.match_filename_with_rule(filename, rule, custom_title)
+            
+            # 获取文件夹识别信息
+            folder_info = self.get_folder_recognition_info(filename, rule, str(file_path))
+            
+            success, new_filename, match_info = self.match_filename_with_rule(filename, rule, custom_title, str(file_path), custom_season)
             
             results.append({
                 'file_path': file_path,
                 'original_name': filename,
                 'new_name': new_filename,
                 'success': success,
-                'match_info': match_info
+                'match_info': match_info,
+                'folder_info': folder_info  # 添加文件夹识别信息
             })
         
         return results
     
-    def execute_rename(self, file_list: List[Path], rule: RegexRule, custom_title: str = None, progress_callback=None) -> Tuple[int, int, List[Dict]]:
+    def execute_rename(self, file_list: List[Path], rule: RegexRule, custom_title: str = None, custom_season: str = None, progress_callback=None) -> Tuple[int, int, List[Dict]]:
         """
         执行重命名操作
         
@@ -149,6 +174,7 @@ class MediaRenamer:
             file_list: 文件列表
             rule: 重命名规则
             custom_title: 自定义剧集名
+            custom_season: 自定义季数
             progress_callback: 进度回调函数，接收(current, total, filename, status)参数
             
         Returns:
@@ -166,7 +192,7 @@ class MediaRenamer:
                 if progress_callback:
                     progress_callback(i + 1, len(file_list), filename, "处理中...")
                 
-                success, new_filename, match_info = self.match_filename_with_rule(filename, rule, custom_title)
+                success, new_filename, match_info = self.match_filename_with_rule(filename, rule, custom_title, str(file_path), custom_season)
                 
                 if success:
                     # 检查目标文件是否已存在

@@ -1,6 +1,6 @@
 {
   "name": "通用字幕组格式",
-  "pattern": "\\[(.+?)\\]\\[(.+?)\\]\\[(\\d+)\\]\\[(.+?)\\]\\[(.+?)\\]\\.(.+)",
+  "pattern": "\\[(.+?)\\]\\[(.+?)\\]\\[(.+?)\\]\\[(.+?)\\]\\[(.+?)\\]\\.(.+)",
   "groups": {
     "sub_group": 1,
     "series": 2,
@@ -9,7 +9,7 @@
     "language": 5,
     "extension": 6
   },
-  "output_format": "{series} S01E{episode:0>2} - [{sub_group}] [{tech_info}] [{language}]",
+  "output_format": "{series} S01E{episode} - [{sub_group}] [{tech_info}] [{language}]",
   "special_handling": {
     "year_pattern": "(19|20)\\d{2}",
     "max_episode": 999,

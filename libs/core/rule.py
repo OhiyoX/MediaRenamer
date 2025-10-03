@@ -11,13 +11,14 @@ import glob
 from pathlib import Path
 from typing import List, Dict, Optional
 
-from libs.config import DEFAULT_RULES_DIR, DEFAULT_RULES
+from libs.config import DEFAULT_RULES_DIR, DEFAULT_RULES, ENABLE_PARENT_FOLDER_RECOGNITION, PARENT_FOLDER_RECOGNITION_CONFIG
+from libs.core.config_manager import ConfigManager
 
 
 class RegexRule:
     """正则表达式规则类"""
     
-    def __init__(self, name: str, pattern: str, groups: Dict[str, int], output_format: str, special_handling: Dict = None):
+    def __init__(self, name: str, pattern: str, groups: Dict[str, int], output_format: str, special_handling: Dict = None, config_manager: ConfigManager = None):
         """
         初始化正则表达式规则
         
@@ -33,6 +34,7 @@ class RegexRule:
         self.groups = groups
         self.output_format = output_format
         self.special_handling = special_handling or {}
+        self.config_manager = config_manager or ConfigManager()
         self.compiled_pattern = re.compile(pattern)
     
     def match(self, filename: str) -> Optional[Dict[str, str]]:
@@ -50,9 +52,111 @@ class RegexRule:
         
         return result
     
-    def generate_output(self, extracted_info: Dict[str, str], extension: str = "") -> str:
+    def get_folder_recognition_info(self, file_path: str) -> Dict[str, str]:
+        """
+        获取文件夹识别信息（仅用于预览显示，不应用到输出）
+        
+        Args:
+            file_path: 文件完整路径
+            
+        Returns:
+            包含识别到的剧名和季数的字典
+        """
+        folder_info = {}
+        
+        if not file_path:
+            return folder_info
+        
+        # 检查是否启用父文件夹识别
+        if not self.config_manager.is_parent_folder_recognition_enabled():
+            return folder_info
+            
+        path_parts = Path(file_path).parts
+        
+        # 使用配置中的季数识别模式
+        season_patterns = self.config_manager.get_season_patterns()
+        
+        # 查找季数信息
+        for part in reversed(path_parts):  # 从后往前查找
+            for pattern in season_patterns:
+                match = re.search(pattern, part, re.IGNORECASE)
+                if match:
+                    folder_info['season'] = match.group(1).zfill(2)  # 补零，如01, 02
+                    break
+            if 'season' in folder_info:
+                break
+        
+        # 查找剧名
+        if 'season' in folder_info:
+            for i, part in enumerate(path_parts):
+                # 查找包含季数信息的文件夹
+                for pattern in season_patterns:
+                    if re.search(pattern, part, re.IGNORECASE):
+                        # 找到季数文件夹，其父文件夹通常是剧名
+                        if i > 0:
+                            folder_info['series'] = path_parts[i-1]
+                        break
+                if 'series' in folder_info:
+                    break
+        
+        return folder_info
+    
+    def extract_parent_info(self, file_path: str) -> Dict[str, str]:
+        """
+        从父文件夹路径中提取剧名和季数信息
+        
+        Args:
+            file_path: 文件完整路径
+            
+        Returns:
+            包含剧名和季数的字典
+        """
+        parent_info = {}
+        
+        # 检查是否启用父文件夹识别
+        if not self.config_manager.is_parent_folder_recognition_enabled():
+            return parent_info
+            
+        path_parts = Path(file_path).parts
+        
+        # 使用配置中的季数识别模式
+        season_patterns = self.config_manager.get_season_patterns()
+        
+        # 查找季数信息（如果启用）
+        if self.config_manager.is_season_recognition_enabled():
+            for part in reversed(path_parts):  # 从后往前查找
+                for pattern in season_patterns:
+                    match = re.search(pattern, part, re.IGNORECASE)
+                    if match:
+                        parent_info['season'] = match.group(1).zfill(2)  # 补零，如01, 02
+                        break
+                if 'season' in parent_info:
+                    break
+        
+        # 查找剧名（如果启用）
+        if self.config_manager.is_series_recognition_enabled():
+            if 'season' in parent_info:
+                for i, part in enumerate(path_parts):
+                    # 查找包含季数信息的文件夹
+                    for pattern in season_patterns:
+                        if re.search(pattern, part, re.IGNORECASE):
+                            # 找到季数文件夹，其父文件夹通常是剧名
+                            if i > 0:
+                                parent_info['series_name'] = path_parts[i-1]
+                            break
+                    if 'series_name' in parent_info:
+                        break
+        
+        return parent_info
+
+    def generate_output(self, extracted_info: Dict[str, str], extension: str = "", file_path: str = "", custom_season: str = None, apply_folder_info: bool = True) -> str:
         """根据提取的信息生成输出文件名"""
         try:
+            # 从父文件夹路径提取信息（仅在启用时）
+            parent_info = {}
+            if file_path and apply_folder_info:
+                parent_info = self.extract_parent_info(file_path)
+            
             # 处理空标题的情况
             processed_info = {}
             for key, value in extracted_info.items():
@@ -93,13 +197,36 @@ class RegexRule:
                             # 标量默认值
                             processed_info[target_field] = sources if isinstance(sources, str) else ""
 
+            # 使用父文件夹信息覆盖或补充提取的信息
+            if parent_info:
+                # 如果有父文件夹的剧名信息，优先使用
+                if 'series_name' in parent_info and parent_info['series_name']:
+                    processed_info['series'] = parent_info['series_name']
+                
+                # 如果有父文件夹的季数信息，用于生成正确的季数格式
+                if 'season' in parent_info and parent_info['season']:
+                    processed_info['parent_season'] = parent_info['season']
+
             # 特殊处理：空episode字段
             if 'episode' in processed_info and not processed_info['episode']:
                 processed_info['episode'] = '01'  # 默认为01
 
-            # 特殊处理：检查是否是年份而不是集数
+            # 特殊处理：集数信息处理
             if 'episode' in processed_info and self.special_handling:
                 episode_num = processed_info['episode']
+                
+                # 处理特殊集数标识（OVA, SP, END等）
+                special_episodes = ['OVA', 'SP', 'SPECIAL', 'END']
+                
+                # 检查是否是特殊集数
+                episode_upper = episode_num.upper()
+                is_special = any(special in episode_upper for special in special_episodes)
+                
+                if is_special:
+                    # 所有特殊集数都保持原样，不进行数字提取
+                    processed_info['episode'] = episode_num
+                
+                # 检查是否是年份而不是集数（仅对纯数字进行年份检查）
                 if episode_num.isdigit():
                     episode_int = int(episode_num)
                     
@@ -124,6 +251,40 @@ class RegexRule:
             
             # 生成基础格式
             base_output = self.output_format.format(**processed_info)
+            
+            # 处理季数信息（优先级：自定义季数 > 父文件夹季数 > 默认季数）
+            import re
+            episode_value = processed_info.get('episode', '')
+            
+            # 确定使用的季数
+            season_num = None
+            
+            # 1. 优先使用自定义季数
+            if custom_season:
+                season_num = custom_season.zfill(2)  # 补零
+            # 2. 其次使用父文件夹识别的季数
+            elif 'parent_season' in processed_info:
+                season_num = processed_info['parent_season']
+            # 3. 最后使用默认季数
+            elif self.config_manager.is_custom_season_enabled():
+                season_num = self.config_manager.get_default_season()
+            
+            # 如果确定了季数，替换输出中的季数部分
+            if season_num:
+                base_output = re.sub(r'S\d+', f'S{season_num}', base_output)
+            
+            # 特殊处理：特殊集数的显示格式
+            if 'episode' in processed_info:
+                episode_value = processed_info['episode']
+                episode_upper = episode_value.upper()
+                
+                if episode_upper in ['OVA', 'SP', 'SPECIAL']:
+                    # OVA/SP显示为S{season} {episode_value}格式
+                    # 例如：S02EOVA -> S02 OVA
+                    base_output = re.sub(r'S(\d+)E[^-\s]*', rf'S\1 {episode_value}', base_output)
+                elif 'END' in episode_upper:
+                    # END保持原样，如S01E13 END
+                    pass  # 不需要特殊处理，保持原样
             
             # 清理多余的 " - " 和 "None"
             base_output = base_output.replace(" - None", "")
