@@ -1,0 +1,18 @@
+{
+  "name": "[Group]横线分隔基础格式",
+  "pattern": "^\\[(?P<sub_group>[^\\]]+)\\]\\s*(?P<series>.+?)\\s*-\\s*(?P<episode>\\d{1,3})\\s*(?P<rest>\\[[^\\]]+\\](?:\\s*\\[[^\\]]+\\])*)?\\.(?P<extension>mp4|mkv|ass|srt|flv|ts|m2ts|avi|mov|wmv|webm|m4v)$",
+  "groups": {
+    "sub_group": 1,
+    "series": 2,
+    "episode": 3,
+    "rest": 4,
+    "extension": 5
+  },
+  "output_format": "{series} S01E{episode:0>2} - [{sub_group}] {rest}",
+  "special_handling": {
+    "preserve_full_extension": true,
+    "max_episode": 999
+  }
+}
+
+

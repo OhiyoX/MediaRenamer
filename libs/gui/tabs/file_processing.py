@@ -98,10 +98,11 @@ class FileProcessingTab:
         button_frame = ttk.Frame(rule_frame)
         button_frame.pack(fill=tk.X, padx=5, pady=5)
         
+        ttk.Button(button_frame, text="验证所有规则", command=self.validate_all_rules).pack(side=tk.RIGHT, padx=5)
         ttk.Button(button_frame, text="重新加载规则", command=self.reload_rules).pack(side=tk.RIGHT, padx=5)
         ttk.Button(button_frame, text="扫描文件", command=self.scan_files).pack(side=tk.RIGHT, padx=5)
         ttk.Button(button_frame, text="清除所有应用规则", command=self.clear_all_applied_rules).pack(side=tk.RIGHT, padx=5)
-        ttk.Button(button_frame, text="应用选中规则到所有文件", command=self.apply_selected_rule_to_all).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(button_frame, text="应用规则(自动匹配优先)", command=self.apply_rules_auto_first).pack(side=tk.RIGHT, padx=5)
         ttk.Button(button_frame, text="自动匹配规则", command=self.batch_match_suggested_rules).pack(side=tk.RIGHT, padx=5)
         
         # 应用规则说明标签
@@ -110,39 +111,118 @@ class FileProcessingTab:
         
         # 初始化应用规则信息
         self.update_apply_info()
-    
-    def apply_selected_rule_to_all(self):
-        """应用选中的规则到所有文件"""
-        selected_rule_name = self.rule_var.get()
-        if not selected_rule_name:
-            messagebox.showwarning("警告", "请先选择一个规则")
+
+    def validate_all_rules(self):
+        """验证所有规则文件的JSON与正则可用性"""
+        import json, glob, re
+        from pathlib import Path
+        rules_dir = self.rule_manager.rules_dir
+        rule_files = glob.glob(str(rules_dir / "*.json"))
+        errors = []
+        checked = 0
+        for rf in rule_files:
+            checked += 1
+            try:
+                with open(rf, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                # 基本字段
+                name = data.get('name')
+                pattern = data.get('pattern')
+                groups = data.get('groups', {})
+                output_format = data.get('output_format')
+                if not all([name, pattern, groups is not None, output_format]):
+                    errors.append(f"{Path(rf).name}: 必填字段缺失")
+                    continue
+                # 编译正则
+                re.compile(pattern)
+                # 校验分组索引为数字
+                for k, v in groups.items():
+                    if not isinstance(v, int):
+                        errors.append(f"{Path(rf).name}: 分组 '{k}' 索引不是整数")
+                        break
+            except Exception as e:
+                errors.append(f"{Path(rf).name}: {e}")
+        if errors:
+            messagebox.showerror("规则验证结果", "发现问题:\n" + "\n".join(errors[:50]))
+        else:
+            messagebox.showinfo("规则验证结果", f"已验证 {checked} 个规则文件，未发现错误。")
+
+    def archive_old_rules(self):
+        """将非白名单规则移动到 rules/archived 进行归档"""
+        import os, shutil, glob
+        from pathlib import Path
+        rules_dir = self.rule_manager.rules_dir
+        archived_dir = rules_dir / 'archived'
+        archived_dir.mkdir(exist_ok=True)
+        # 白名单保留的规则
+        whitelist = {
+            '综合通用格式',
+            '简单数字格式',
+            '简单数字格式-保留技术信息',
+            '带季数剧集格式',
+            '标准剧集格式',
+            '通用方括号格式',
+            '通用横线分隔格式',
+            '通用点分隔格式',
+            '通用下划线分隔格式'
+        }
+        # 询问确认
+        if not messagebox.askyesno("确认", "将把非白名单规则移动到 rules/archived。是否继续？"):
             return
-        
+        moved = 0
+        for json_path in glob.glob(str(rules_dir / "*.json")):
+            name = Path(json_path).stem
+            if name not in whitelist:
+                target = archived_dir / Path(json_path).name
+                try:
+                    shutil.move(json_path, target)
+                    moved += 1
+                except Exception as e:
+                    messagebox.showerror("归档失败", f"{name}: {e}")
+        self.reload_rules()
+        messagebox.showinfo("完成", f"已归档 {moved} 个规则。")
+    
+    def apply_rules_auto_first(self):
+        """应用规则：若已进行自动匹配，则使用自动匹配结果，否则使用手动选择的规则"""
         if not self.file_list:
             messagebox.showwarning("警告", "没有文件需要处理")
             return
         
-        # 找到选中的规则
-        selected_rule = None
-        for rule in self.rules:
-            if rule.name == selected_rule_name:
-                selected_rule = rule
-                break
+        used_auto = False
+        # 优先使用自动匹配结果
+        if hasattr(self, 'auto_match_results') and self.auto_match_results:
+            for filename, result in self.auto_match_results.items():
+                rule = result.get('rule')
+                file_path = result.get('file_path')
+                if rule and file_path:
+                    self.applied_rules[filename] = rule
+                    used_auto = True
         
-        if not selected_rule:
-            messagebox.showerror("错误", "规则不存在")
-            return
+        if not used_auto:
+            # 回退到手动选择
+            selected_rule_name = self.rule_var.get()
+            if not selected_rule_name:
+                messagebox.showwarning("警告", "未找到自动匹配结果，请先选择一个规则")
+                return
+            selected_rule = None
+            for rule in self.rules:
+                if rule.name == selected_rule_name:
+                    selected_rule = rule
+                    break
+            if not selected_rule:
+                messagebox.showerror("错误", "规则不存在")
+                return
+            for file_path in self.file_list:
+                filename = file_path.name
+                self.applied_rules[filename] = selected_rule
         
-        # 应用规则到所有文件
-        for file_path in self.file_list:
-            filename = file_path.name
-            self.applied_rules[filename] = selected_rule
-        
-        # 更新预览和应用信息
+        # 更新预览与提示
         self.preview_rename()
         self.update_apply_info()
-        
-        messagebox.showinfo("完成", f"已应用规则 '{selected_rule_name}' 到所有文件")
+        if used_auto:
+            messagebox.showinfo("完成", "已应用自动匹配的规则到所有文件")
+        else:
+            messagebox.showinfo("完成", "已应用手动选择的规则到所有文件")
     
     def clear_all_applied_rules(self):
         """清除所有应用规则"""
@@ -1288,14 +1368,16 @@ class FileProcessingTab:
                     status = "已应用规则"
                     applied_rule_name = applied_rule.name
                     match_info = str(result['match_info'])
-                    match_score = "N/A"
+                    # 计算匹配分数
+                    match_score = self.rule_matcher.calculate_rule_score(applied_rule, filename)
+                    match_score = f"{match_score:.1f}" if match_score > 0 else "0.0"
                     new_filename = result['new_name']
                 else:
                     result = None
                     status = "应用规则失败"
                     applied_rule_name = applied_rule.name
                     match_info = "无匹配"
-                    match_score = "N/A"
+                    match_score = "0.0"
                     new_filename = filename
             else:
                 # 没有应用规则
