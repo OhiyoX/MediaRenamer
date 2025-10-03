@@ -1,0 +1,12 @@
+{
+  "name": "DMG字幕组格式",
+  "pattern": "\\[DMG\\]\\[([^\\]]+)\\]\\[(\\d+|OVA)\\]\\[(\\d+P)\\]\\[([^\\]]+)\\]\\[([^\\]]+)\\]",
+  "groups": {
+    "series": 1,
+    "episode": 2,
+    "resolution": 3,
+    "language": 4,
+    "quality": 5
+  },
+  "output_format": "{series} S01E{episode:0>2} - [DMG][{resolution}][{language}][{quality}]"
+}

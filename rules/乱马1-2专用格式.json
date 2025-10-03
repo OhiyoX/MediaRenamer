@@ -1,0 +1,13 @@
+{
+  "name": "乱马1/2专用格式",
+  "pattern": "^(\\d+)\\s*-\\s*(.+?)(?:\\.mp4|\\.mkv|\\.avi|\\.mov|\\.wmv|\\.flv|\\.webm|\\.m4v|\\.mpg|\\.mpeg|\\.3gp|\\.ogv|\\.ts|\\.m2ts)$",
+  "groups": {
+    "episode": 1,
+    "title": 2
+  },
+  "output_format": "乱马1/2 S01E{episode:0>2} - {title}",
+  "special_handling": {
+    "year_pattern": "(19|20)\\d{2}",
+    "max_episode": 200
+  }
+}

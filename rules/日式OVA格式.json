@@ -1,0 +1,11 @@
+{
+  "name": "日式OVA格式",
+  "pattern": "(.+?)\\.OVA\\.(\\d{4})\\.(\\d+x\\d+)\\.(.+?)\\.x264\\.AC3",
+  "groups": {
+    "title": 1,
+    "year": 2,
+    "resolution": 3,
+    "quality": 4
+  },
+  "output_format": "{title} OVA ({year}).{resolution}.{quality}.x264.AC3"
+}

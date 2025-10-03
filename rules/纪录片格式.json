@@ -1,0 +1,10 @@
+{
+  "name": "纪录片格式",
+  "pattern": "(.+?)\\s*-\\s*第(\\d+)集\\s*(.+?)(?:\\s*\\[|\\s*\\(|$)",
+  "groups": {
+    "series": 1,
+    "episode": 2,
+    "title": 3
+  },
+  "output_format": "{series} S01E{episode:0>2} - {title}"
+}

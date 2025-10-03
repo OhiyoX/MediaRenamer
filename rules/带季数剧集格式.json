@@ -1,0 +1,11 @@
+{
+  "name": "带季数剧集格式",
+  "pattern": "\\[([^\\]]+)\\]\\s*S(\\d+)E(\\d+)\\s*(.+?)(?:\\s*\\[|\\s*\\(|$)",
+  "groups": {
+    "series": 1,
+    "season": 2,
+    "episode": 3,
+    "title": 4
+  },
+  "output_format": "{series} S{season:0>2}E{episode:0>2} - {title}"
+}

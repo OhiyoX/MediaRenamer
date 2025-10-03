@@ -1,0 +1,13 @@
+{
+  "name": "YYDM-11FANS格式",
+  "pattern": "\\[YYDM-11FANS\\]\\[([^\\]]+)\\]\\[([^\\]]+)\\]\\[(\\d+)\\]\\[([^\\]]+)\\]\\[(\\d+P)\\]\\[([^\\]]+)\\]",
+  "groups": {
+    "series_name": 1,
+    "quality": 2,
+    "episode": 3,
+    "codec": 4,
+    "resolution": 5,
+    "hash": 6
+  },
+  "output_format": "{series_name} S01E{episode:0>2} - [YYDM-11FANS][{quality}][{codec}][{resolution}]"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Evangelion特殊格式",
+  "pattern": "(.+?)\\s*-\\s*(OP|ED)\\s*-\\s*(.+?)\\s*(\\[.*?\\])\\.(.+)",
+  "groups": {
+    "series": 1,
+    "type": 2,
+    "quality": 3,
+    "hash": 4,
+    "extension": 5
+  },
+  "output_format": "{series} - {type} - {quality} {hash}",
+  "special_handling": {
+    "preserve_full_extension": true
+  }
+}
+

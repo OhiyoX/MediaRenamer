@@ -1,0 +1,17 @@
+{
+  "name": "通用方括号格式",
+  "pattern": "\\[(.+?)\\]\\[(.+?)\\]\\[(.+?)\\]\\[(\\d+)\\]\\[(.+?)\\]\\.(.+)",
+  "groups": {
+    "sub_group": 1,
+    "series": 2,
+    "quality": 3,
+    "episode": 4,
+    "encoding": 5,
+    "extension": 6
+  },
+  "output_format": "{series} S01E{episode:0>2} - [{sub_group}] [{quality}] [{encoding}]",
+  "special_handling": {
+    "year_pattern": "(19|20)\\d{2}",
+    "max_episode": 100
+  }
+}

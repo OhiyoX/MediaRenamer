@@ -1,0 +1,14 @@
+{
+  "name": "YYDM-11FANS详细格式",
+  "pattern": "\\[YYDM-11FANS\\]\\[([^]]+)\\]\\[BDRIP\\]\\[(\\d+)\\](?:\\[([^]]+)\\])?\\[([^]]+)\\]\\[([^]]+)\\]\\[([A-F0-9]+)\\](?:\\.(tc))?\\.ass",
+  "groups": {
+    "title": 1,
+    "episode": 2,
+    "codec": 3,
+    "audio": 4,
+    "resolution": 5,
+    "hash": 6,
+    "lang": 7
+  },
+  "output_format": "{title} S01E{episode} - [YYDM-11FANS][BDRIP][{audio}][{resolution}][{hash}].{lang}"
+}

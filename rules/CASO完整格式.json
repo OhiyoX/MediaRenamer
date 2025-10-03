@@ -1,0 +1,15 @@
+{
+  "name": "CASO完整格式",
+  "pattern": "\\[(.+?)\\]\\[(.+?)\\]\\[(\\d+)\\]\\[(.+?)\\]\\[(.+?)\\]\\[(.+?)\\]\\[(.+?)\\]\\.(.+)",
+  "groups": {
+    "sub_group": 1,
+    "series": 2,
+    "episode": 3,
+    "quality": 4,
+    "resolution": 5,
+    "encoding": 6,
+    "hash": 7,
+    "suffix": 8
+  },
+  "output_format": "{series} S01E{episode:0>2} - [{sub_group}] [{quality}] [{resolution}] [{encoding}] [{hash}]"
+}

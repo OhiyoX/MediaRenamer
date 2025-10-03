@@ -1,0 +1,16 @@
+{
+  "name": "通用下划线分隔格式",
+  "pattern": "(.+?)_(?:BD_)?Ep(\\d+)_(.+?)\\.(.+)",
+  "groups": {
+    "series": 1,
+    "episode": 2,
+    "subtitle_group": 3,
+    "extension": 4
+  },
+  "output_format": "{series} S01E{episode:0>3} - [{subtitle_group}]",
+  "special_handling": {
+    "year_pattern": "(19|20)\\d{2}",
+    "max_episode": 100
+  }
+}
+

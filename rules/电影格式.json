@@ -1,0 +1,10 @@
+{
+  "name": "电影格式",
+  "pattern": "(.+?)\\s*\\((\\d{4})\\)(?:\\s*-\\s*(.+?))?(?:\\s*\\[|\\s*\\(|$)",
+  "groups": {
+    "title": 1,
+    "year": 2,
+    "quality": 3
+  },
+  "output_format": "{title} ({year}) - {quality}"
+}

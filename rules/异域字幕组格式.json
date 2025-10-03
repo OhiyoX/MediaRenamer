@@ -1,0 +1,13 @@
+{
+  "name": "异域字幕组格式",
+  "pattern": "\\[异域字幕组\\]\\[([^\\]]+)\\]\\[([^\\]]+)\\]\\[([^\\]]+)\\]\\[(\\d+|\\d+END)\\]\\[(\\d+p)\\]\\[([^\\]]+)\\]",
+  "groups": {
+    "season_info": 1,
+    "series_name": 2,
+    "series_name_en": 3,
+    "episode": 4,
+    "resolution": 5,
+    "language": 6
+  },
+  "output_format": "{series_name} S01E{episode:0>2} - [异域字幕组][{season_info}][{resolution}][{language}]"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "HYSUB_OAD格式",
+  "pattern": "\\[HYSUB\\]([^\\[]+)\\[OAD\\]\\[(\\d+)\\]\\[([^\\]]+)\\]\\[([^\\]]+)\\]\\[([^\\]]+)\\]",
+  "groups": {
+    "series_name": 1,
+    "episode": 2,
+    "quality": 3,
+    "language": 4,
+    "resolution": 5
+  },
+  "output_format": "{series_name} OAD S01E{episode:0>2} - [HYSUB][{quality}][{language}][{resolution}]"
+}

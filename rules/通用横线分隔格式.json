@@ -1,0 +1,17 @@
+{
+  "name": "通用横线分隔格式",
+  "pattern": "(.+?)\\s*-\\s*(\\d+)\\s*-\\s*(.+?)\\s*(\\[.*?\\])\\.(.+)",
+  "groups": {
+    "series": 1,
+    "episode": 2,
+    "quality": 3,
+    "hash": 4,
+    "extension": 5
+  },
+  "output_format": "{series} S01E{episode:0>2} - {quality} {hash}",
+  "special_handling": {
+    "year_pattern": "(19|20)\\d{2}",
+    "max_episode": 100,
+    "preserve_full_extension": true
+  }
+}

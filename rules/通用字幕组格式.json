@@ -1,0 +1,13 @@
+{
+  "name": "通用字幕组格式",
+  "pattern": "\\[(.+?)\\]\\[(.+?)\\]\\[(\\d+)\\]\\[(.+?)\\]\\[(.+?)\\]\\.(.+)",
+  "groups": {
+    "sub_group": 1,
+    "series": 2,
+    "episode": 3,
+    "tech_info": 4,
+    "language": 5,
+    "extension": 6
+  },
+  "output_format": "{series} S01E{episode:0>2} - [{sub_group}] [{tech_info}] [{language}]"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "简单数字格式-保留技术信息",
+  "pattern": "(.+?)\\s*(\\d+)(?:\\s*-\\s*(.+?))?\\s*(\\[.*?\\])",
+  "groups": {
+    "series": 1,
+    "episode": 2,
+    "title": 3,
+    "tech_info": 4
+  },
+  "output_format": "{series} S01E{episode:0>2} - {title} {tech_info}"
+}

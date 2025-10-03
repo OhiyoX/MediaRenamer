@@ -1,0 +1,16 @@
+{
+  "name": "Evangelion范围格式",
+  "pattern": "(.+?)\\s*-\\s*(\\d+-\\d+)\\s*-\\s*(.+?)\\s*(\\[.*?\\])\\.(.+)",
+  "groups": {
+    "series": 1,
+    "range": 2,
+    "quality": 3,
+    "hash": 4,
+    "extension": 5
+  },
+  "output_format": "{series} - {range} - {quality} {hash}",
+  "special_handling": {
+    "preserve_full_extension": true
+  }
+}
+
