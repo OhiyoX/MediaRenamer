@@ -1,6 +1,6 @@
 {
   "name": "综合通用格式",
-  "pattern": "^(?:\\[(?P<sub_group>[^\\]]+)\\]\\s*)?(?P<series>[^\\s\\[\\]-]+?)?\\s*(?:S(?P<season>\\d{1,2}))?\\s*(?:E(?P<episode_se>\\d{1,3}))?\\s*(?:-|\\.)?\\s*(?P<title>[^\\[]+?)?(?:\\s*(?P<tech_info>\\[[^\\]]+\\]))?(?:\\.(?P<extension>mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|3gp|ogv|ts|m2ts))?$",
+  "pattern": "^(?:\\[(?P<sub_group>[^\\]]+)\\]\\s*)?(?P<series>[^\\s\\[\\]-]+?)?\\s*(?:S(?P<season>\\d{1,2}))?\\s*(?:E(?P<episode_se>\\d{1,3}))?\\s*(?:-|\\.|\\s+)?\\s*(?P<title>[^\\[]+?)?(?:\\s*(?P<tech_info>\\[[^\\]]+\\]))?(?:\\.(?P<extension>mp4|mkv|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|3gp|ogv|ts|m2ts|ass|srt|sub|idx))?$",
   "groups": {
     "sub_group": 1,
     "series": 2,
@@ -19,7 +19,8 @@
       "title": ["title", ""]
     },
     "year_pattern": "(19|20)\\d{2}",
-    "max_episode": 999
+    "max_episode": 999,
+    "preserve_full_extension": true
   }
 }
 

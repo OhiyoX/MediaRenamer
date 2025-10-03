@@ -1,9 +1,0 @@
-{
-  "name": "相聚一刻便携版格式",
-  "pattern": "^\\[相聚一刻 正篇\\]\\s+AA(\\d+)\\s+(.+?)\\.(mp4|mkv)$",
-  "groups": {
-    "episode": 1,
-    "title": 2
-  },
-  "output_format": "相聚一刻 S01E{episode:0>2} - {title}"
-}

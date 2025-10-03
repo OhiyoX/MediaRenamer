@@ -168,7 +168,7 @@ class FileProcessingTab:
                 # 回退到手动选择
                 selected_rule_name = self.rule_selector.get_selected_rule_name()
                 if not selected_rule_name:
-                    messagebox.showwarning("警告", "未找到自动匹配结果，请先选择一个规则")
+                    self.status_bar.update_status("警告: 未找到自动匹配结果，请先选择一个规则")
                     return
                 self.logic.apply_manual_rule(selected_rule_name)
             
@@ -177,11 +177,12 @@ class FileProcessingTab:
             self.update_apply_info()
             
             if used_auto:
-                messagebox.showinfo("完成", "已应用自动匹配的规则到所有文件")
+                self.status_bar.update_status("完成: 已应用自动匹配的规则到所有文件")
             else:
-                messagebox.showinfo("完成", "已应用手动选择的规则到所有文件")
+                self.status_bar.update_status("完成: 已应用手动选择的规则到所有文件")
                 
         except Exception as e:
+            self.status_bar.update_status(f"错误: {str(e)}")
             messagebox.showerror("错误", str(e))
     
     def on_batch_match_rules(self):
@@ -194,13 +195,11 @@ class FileProcessingTab:
             matched_count = sum(1 for result in auto_match_results.values() if result['rule'])
             total_count = len(self.logic.file_list)
             
-            # 显示匹配统计
-            messagebox.showinfo("批量匹配完成", 
-                               f"匹配结果：\n"
-                               f"总文件数：{total_count}\n"
-                               f"成功匹配：{matched_count}\n"
-                               f"匹配率：{matched_count/total_count*100:.1f}%\n\n"
-                               f"请查看预览区域，确认无误后点击'执行重命名'")
+            # 显示匹配统计到状态栏
+            match_rate = matched_count/total_count*100 if total_count > 0 else 0
+            self.status_bar.update_status(
+                f"批量匹配完成: 总文件数 {total_count}, 成功匹配 {matched_count}, 匹配率 {match_rate:.1f}%"
+            )
             
             # 更新预览显示自动匹配结果
             self.preview_rename()
@@ -209,6 +208,7 @@ class FileProcessingTab:
             self.update_apply_info()
             
         except Exception as e:
+            self.status_bar.update_status(f"错误: {str(e)}")
             messagebox.showerror("错误", str(e))
     
     def on_title_change(self, custom_title: str):
